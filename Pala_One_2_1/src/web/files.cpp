@@ -331,7 +331,7 @@ static void handleMoveBook() {
 
   // New filepath exceeds the max filename length from `/books/`
   if (newPath.size() >= MAX_FILE_NAME) {
-    server.send(500, "text/plain; charset=utf-8", D_WEB_ERR_MOVE_FAILED);
+    server.send(500, "text/plain; charset=utf-8", D_WEB_ERR_FILE_NAME_TOO_LONG);
     return;
   }
 
