@@ -102,10 +102,11 @@ String sanitizeUploadedFilename(String fname) {
   while (clean.startsWith(".")) clean.remove(0, 1);
   if (clean.length() == 0) clean = "book.txt";
   if (!clean.endsWith(".txt")) clean += ".txt";
-   if (clean.length() >= MAX_FILE_NAME) {
-    // clean always ends in ".txt" here; keep MAX_FILE_NAME - 5 base chars
-    // so the result is at most 88 and "/books/" + name fits path[96].
-    clean = clean.substring(0, MAX_FILE_NAME - 5) + ".txt";
+  if (clean.length() >= MAX_UPLOAD_FILE_NAME) {
+    // clean always ends in ".txt" here; keep MAX_UPLOAD_FILE_NAME - 5 base chars
+    // so the result is at most MAX_UPLOAD_FILE_NAME
+    // "/books/" + name fits path[MAX_FILE_NAME].
+    clean = clean.substring(0, MAX_UPLOAD_FILE_NAME - 5) + ".txt";
   }
   return clean;
 }
