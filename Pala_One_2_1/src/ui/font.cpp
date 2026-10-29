@@ -339,37 +339,48 @@ int measureBionicLine(const char* line) {
 
 void drawBionicLine(int x, int y, const char* line) {
   if (!line) return;
-  if (!s_bionic) {
-    useBody();
-    u8g2.setCursor(x, y);
-    u8g2.print(line);
-    return;
-  }
   int cursorX = x;
-  forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
-    if (segLen <= 0) return;
-    if (!isWord) {
+  if (!s_bionic) {
+    forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
+      if (segLen <= 0) return;
+      if (!isWord) {
+        useBody();
+        printSlice(cursorX, y, seg, segLen);
+        cursorX += measureSlice(seg, segLen);
+        return;
+      }
       useBody();
       printSlice(cursorX, y, seg, segLen);
       cursorX += measureSlice(seg, segLen);
       return;
-    }
-    int strong = bionicPrefixBytes(seg, segLen);
-    if (strong <= 0) {
+    });
+    return;
+  } else {
+    forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
+      if (segLen <= 0) return;
+      if (!isWord) {
+        useBody();
+        printSlice(cursorX, y, seg, segLen);
+        cursorX += measureSlice(seg, segLen);
+        return;
+      }
+      int strong = bionicPrefixBytes(seg, segLen);
+      if (strong <= 0) {
+        useBody();
+        printSlice(cursorX, y, seg, segLen);
+        cursorX += measureSlice(seg, segLen);
+        return;
+      }
+      useBold();
+      printSlice(cursorX, y, seg, strong);
+      cursorX += measureSlice(seg, strong);
+      cursorX += kBionicRestGapPx;
       useBody();
-      printSlice(cursorX, y, seg, segLen);
-      cursorX += measureSlice(seg, segLen);
-      return;
-    }
-    useBold();
-    printSlice(cursorX, y, seg, strong);
-    cursorX += measureSlice(seg, strong);
-    cursorX += kBionicRestGapPx;
+      printSlice(cursorX, y, seg + strong, segLen - strong);
+      cursorX += measureSlice(seg + strong, segLen - strong);
+    });
     useBody();
-    printSlice(cursorX, y, seg + strong, segLen - strong);
-    cursorX += measureSlice(seg + strong, segLen - strong);
-  });
-  useBody();
+  }
 }
 
 void invalidateLayoutCache() { s_layoutValid = false; }
