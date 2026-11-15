@@ -8,7 +8,7 @@
 //  File format (little-endian):
 //    uint32 magic            kPageCacheMagic
 //    uint32 layoutVersion    encodeLayoutVersion(layout)
-//                            — bodySize/lineGap/family/bionic/statusbarReserve
+//                            — bodySize/lineGap/family/bionic/markdown/statusbarReserve
 //    uint32 fileSize         source-book size at save time
 //    uint16 count            number of entries that follow
 //    uint32 offsets[count]   byte offsets of pages 0..count-1
@@ -39,7 +39,7 @@ static constexpr size_t kHeaderBytes =
 // Compact encoding of "what layout were the offsets in this file computed
 // under?" — bodySize ∈ {8,10,12,14} and lineGap ∈ [0,4] get a byte each.
 // Third byte really packs in the small fields: family ∈ {0,1} gets 2 bits to allow for
-// growth; and, bionic ∈ {0,1} and halfGaps ∈ {0,1} get a bit each.
+// growth; and bionic ∈ {0,1}, halfGaps ∈ {0,1}, and markdown ∈ {0,1} get a bit each.
 // statusbarReserve in pixels (currently 0/1/STATUS_H) gets to stretch out in the top byte.
 // Bits 20-23 are currently spare.
 static uint32_t encodeLayoutVersion(const PageCacheLayout& layout) {
@@ -48,6 +48,7 @@ static uint32_t encodeLayoutVersion(const PageCacheLayout& layout) {
        | ((uint32_t)(layout.family           & 0x03) << 16)
        | ((uint32_t)(layout.bionic           & 0x01) << 18)
        | ((uint32_t)(layout.halfGaps         & 0x01) << 19)
+       | ((uint32_t)(layout.markdown         & 0x01) << 20)
        | ((uint32_t)(layout.statusbarReserve & 0xFF) << 24);
 }
 
