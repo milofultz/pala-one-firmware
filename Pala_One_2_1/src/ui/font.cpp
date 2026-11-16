@@ -300,8 +300,8 @@ static void forEachLineSegment(const char* line, Fn onPart) {
 // active font.
 static int measureSlice(const char* src, int len, int max) {
   if (len <= 0) return 0;
-  if (len >= kFormattedScratchMax) len = kFormattedScratchMax - 1;
-  char scratch[kFormattedScratchMax];
+  if (len >= max) len = max - 1;
+  char scratch[max];
   memcpy(scratch, src, (size_t)len);
   scratch[len] = 0;
   return u8g2.getUTF8Width(scratch);
