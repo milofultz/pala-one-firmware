@@ -274,7 +274,7 @@ int bionicPrefixBytes(const char* word, int byteLen) {
 
 // Largest line the paginator emits in one shot — see kLineMax in
 // paginator.cpp. Word-level slicing fits in the same envelope.
-static constexpr int kBionicScratchMax = 320;
+static constexpr int kFormattedScratchMax = 320;
 
 // Walk a body-text line and call `onPart` for each maximal stretch of
 // either non-space bytes (one word) or space bytes (one space run). For
@@ -296,20 +296,20 @@ static void forEachLineSegment(const char* line, Fn onPart) {
 // Measure helper — copies bytes [src, src+len) into a NUL-terminated stack
 // buffer and returns u8g2.getUTF8Width on it. Caller has already set the
 // active font.
-static int measureSlice(const char* src, int len) {
+static int measureSlice(const char* src, int len, int max) {
   if (len <= 0) return 0;
-  if (len >= kBionicScratchMax) len = kBionicScratchMax - 1;
-  char scratch[kBionicScratchMax];
+  if (len >= kFormattedScratchMax) len = kFormattedScratchMax - 1;
+  char scratch[kFormattedScratchMax];
   memcpy(scratch, src, (size_t)len);
   scratch[len] = 0;
   return u8g2.getUTF8Width(scratch);
 }
 
 // Print helper — same idea, but prints at (x, y).
-static void printSlice(int x, int y, const char* src, int len) {
+static void printSlice(int x, int y, const char* src, int len, int max) {
   if (len <= 0) return;
-  if (len >= kBionicScratchMax) len = kBionicScratchMax - 1;
-  char scratch[kBionicScratchMax];
+  if (len >= max) len = max - 1;
+  char scratch[max];
   memcpy(scratch, src, (size_t)len);
   scratch[len] = 0;
   u8g2.setCursor(x, y);
@@ -324,83 +324,87 @@ static int measureBionicWord(const char* word, int len) {
   int strong = bionicPrefixBytes(word, len);
   if (strong <= 0) {
     useBody();
-    return measureSlice(word, len);
+    return measureSlice(word, len, kFormattedScratchMax);
   }
   useBold();
-  int wStrong = measureSlice(word, strong);
+  int wStrong = measureSlice(word, strong, kFormattedScratchMax);
   useBody();
-  int wTail = measureSlice(word + strong, len - strong);
+  int wTail = measureSlice(word + strong, len - strong, kFormattedScratchMax);
   return wStrong + kBionicRestGapPx + wTail;
 }
 
-int measureBionicLine(const char* line) {
+int measureLine(const char* line) {
   if (!line) return 0;
-  if (!s_bionic) {
-    useBody();
-    return u8g2.getUTF8Width(line);
-  }
+  if (s_bionic) return measureBionicLine(line);
+  useBody();
+  return u8g2.getUTF8Width(line);
+}
+
+int measureBionicLine(const char* line) {
   int total = 0;
   forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
     if (!isWord) {
       useBody();
-      total += measureSlice(seg, segLen);
+      total += measureSlice(seg, segLen, kFormattedScratchMax);
       return;
     }
-    total += measureBionicWord(seg, segLen);
+    total += measureBionicWord(seg, segLen, kFormattedScratchMax);
   });
   useBody();
   return total;
 }
 
-void drawBionicLine(int x, int y, const char* line) {
+void drawLine(int x, int y, const char* line) {
   if (!line) return;
+  if (s_bionic) drawBionicLine(x, y, line);
   int cursorX = x;
-  if (!s_bionic) {
-    forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
-      if (segLen <= 0) return;
-      if (!isWord) {
-        useBody(); // isBold ? useBold() : useBody();
-        printSlice(cursorX, y, seg, segLen);
-        cursorX += measureSlice(seg, segLen);
-        return;
-      }
-      // find next delineator char in segment
-      // while delineator char exists
-      // print current segment at current weight
-      useBody(); // idBold ? useBold() : useBody();
-      printSlice(cursorX, y, seg, segLen);
-      cursorX += measureSlice(seg, segLen);
-      // set isBold to new value, ensuring it exists for next line to be printed
-      // end while
+  forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
+    if (segLen <= 0) return;
+    if (!isWord) {
+      useBody(); // isBold ? useBold() : useBody();
+      printSlice(cursorX, y, seg, segLen, K_LINE_MAX);
+      cursorX += measureSlice(seg, segLen, K_LINE_MAX);
       return;
-    });
+    }
+    // find next delineator char in segment
+    // while delineator char exists
+    // print current segment at current weight
+    useBody(); // idBold ? useBold() : useBody();
+    printSlice(cursorX, y, seg, segLen, K_LINE_MAX);
+    cursorX += measureSlice(seg, segLen, K_LINE_MAX);
+    // set isBold to new value, ensuring it exists for next line to be printed
+    // end while
     return;
-  } else {
-    forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
-      if (segLen <= 0) return;
-      if (!isWord) {
-        useBody();
-        printSlice(cursorX, y, seg, segLen);
-        cursorX += measureSlice(seg, segLen);
-        return;
-      }
-      int strong = bionicPrefixBytes(seg, segLen);
-      if (strong <= 0) {
-        useBody();
-        printSlice(cursorX, y, seg, segLen);
-        cursorX += measureSlice(seg, segLen);
-        return;
-      }
-      useBold();
-      printSlice(cursorX, y, seg, strong);
-      cursorX += measureSlice(seg, strong);
-      cursorX += kBionicRestGapPx;
+  });
+  return;
+}
+
+void drawBionicLine(int x, int y, const char* line) {
+  int cursorX = x;
+  forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
+    if (segLen <= 0) return;
+    if (!isWord) {
       useBody();
-      printSlice(cursorX, y, seg + strong, segLen - strong);
-      cursorX += measureSlice(seg + strong, segLen - strong);
-    });
+      printSlice(cursorX, y, seg, segLen, kFormattedScratchMax);
+      cursorX += measureSlice(seg, segLen, kFormattedScratchMax);
+      return;
+    }
+    int strong = bionicPrefixBytes(seg, segLen);
+    if (strong <= 0) {
+      useBody();
+      printSlice(cursorX, y, seg, segLen, kFormattedScratchMax);
+      cursorX += measureSlice(seg, segLen, kFormattedScratchMax);
+      return;
+    }
+    useBold();
+    printSlice(cursorX, y, seg, strong, kFormattedScratchMax);
+    cursorX += measureSlice(seg, strong, kFormattedScratchMax);
+    cursorX += kBionicRestGapPx;
     useBody();
-  }
+    printSlice(cursorX, y, seg + strong, segLen - strong, kFormattedScratchMax);
+    cursorX += measureSlice(seg + strong, segLen - strong, kFormattedScratchMax);
+  });
+  useBody();
 }
 
 void invalidateLayoutCache() { s_layoutValid = false; }

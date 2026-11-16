@@ -3,14 +3,15 @@
 #include "src/hal/display.h"            // u8g2
 #include "src/pure/bookmarks_codec.h"   // kOffsetUnset
 #include "src/storage/page_cache.h"     // on-disk page-offset cache
-#include "src/ui/font.h"                // Font::useBody / bodyLayout / measureBionicLine / layoutForCache
+#include "src/ui/font.h"                // Font::useBody / bodyLayout / measureLine / layoutForCache
 
-// Measure-width adapter for the paginator. Routes through Font::measureBionicLine
-// so the bionic 1-px-per-split-word adjustment is folded into the same width
-// budget the paginator wraps against — without bionic this collapses to a
-// plain getUTF8Width under the Body face.
+// Measure-width adapter for the paginator. Routes through Font::measureLine,
+// which handles other options under the hood (e.g. bionic, markdown) The bionic
+// 1-px-per-split-word adjustment is folded into the same width budget the
+// paginator wraps against — without bionic this collapses to a plain
+// getUTF8Width under the Body face.
 static int bodyMeasure(const char* s) {
-  return Font::measureBionicLine(s);
+  return Font::measureLine(s);
 }
 
 // ============================================================================
@@ -29,9 +30,9 @@ uint32_t drawPageAt(File& f, uint32_t startPos) {
   auto onLine = [&](const char* buf, size_t len) {
     // len 0 indicates a paragraph gap. Advance by gap height.
     if (len == 0) { cursorY += m.paragraphGapH; return; }
-    // drawBionicLine sets the active u8g2 font back to Body before returning,
+    // drawLine sets the active u8g2 font back to Body before returning,
     // so the next line measurement (via bodyMeasure) is consistent.
-    Font::drawBionicLine(MARGIN_X, cursorY, buf);
+    Font::drawLine(MARGIN_X, cursorY, buf);
     cursorY += m.lineH;
   };
 
