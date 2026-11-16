@@ -213,6 +213,8 @@ static void handleSettings() {
   String bChecked  = curBionic ? " checked" : "";
   bool curHalfGaps = Font::halfParagraphGapsEnabled();
   String hgChecked = curHalfGaps ? " checked" : "";
+  bool curMarkdown   = Font::markdownEnabled();
+  String mChecked  = curMarkdown ? " checked" : "";
 
   String alertText;
   if (server.hasArg("alert"))
@@ -274,7 +276,7 @@ static void handleSettings() {
   out += "><span>" D_WEB_ICON_SLEEP_LABEL "</span></label>";
   out += "<div class='hint'>" D_WEB_ICON_SLEEP_HINT "</div>";
   out += "<input type='hidden' name='icons_form' value='1'>";
-  
+
   out += "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;cursor:pointer'>";
   out += "<input type='checkbox' name='batt_ind' value='1' style='width:auto'";
   out += !ScreenSettings::batteryIndicatorsEnabled() ? " checked" : "";
@@ -341,6 +343,9 @@ static void handleSettings() {
     "<div class='full' style='grid-column:1/-1'><label style='display:flex;gap:10px;align-items:center;font-weight:600'>"
     "<input type='checkbox' name='hgap' value='1'"; out += hgChecked; out += "><span>" D_WEB_PARA_GAP_LABEL "</span></label>"
     "<div class='hint'>" D_WEB_PARA_GAP_HINT "</div></div>"
+    "<div class='full' style='grid-column:1/-1'><label style='display:flex;gap:10px;align-items:center;font-weight:600'>"
+    "<input type='checkbox' name='markdown' value='1'"; out += mChecked; out += "><span>" D_WEB_MARKDOWN_LABEL "</span></label>"
+    "<div class='hint'>" D_WEB_MARKDOWN_HINT "</div></div>"
     "</div>"
     "<div style='margin-top:14px'>"
     "<label style='display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer'>"
@@ -397,7 +402,7 @@ static void handleSettings() {
     "<div class='actions' style='margin-top:24px'><button type='submit'>" D_WEB_TIMINGS_SAVE "</button>"
     "<span class='muted'>" D_WEB_SETTINGS_APPLY_HINT "</span></div>"
     "</form></div>";
- 
+
   // Wi-Fi card — own form (wifi_form sentinel), posts back to the same
   // /settings endpoint as the other cards. Edits the single stored network
   // the upload screen joins.
@@ -533,6 +538,11 @@ static bool applySettingsForm() {
   bool wantHalfGaps = server.hasArg("hgap");
   if (wantHalfGaps != Font::halfParagraphGapsEnabled()) {
     Font::setHalfParagraphGaps(wantHalfGaps);
+    layoutChanged = true;
+  }
+  bool wantMarkdown = server.hasArg("markdown");
+  if (wantMarkdown != Font::markdownEnabled()) {
+    Font::setMarkdown(wantMarkdown);
     layoutChanged = true;
   }
   return layoutChanged;

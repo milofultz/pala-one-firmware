@@ -59,12 +59,15 @@ static int  getLineGap(void)   { return Font::currentLineGap(); }
 static void setLineGap(int v)  { Font::setLineGap(v); }
 static int  getBionic(void)    { return Font::bionicEnabled() ? 1 : 0; }
 static void setBionic(int v)   { Font::setBionic(v != 0); }
+static int  getMarkdown(void)  { return Font::markdownEnabled() ? 1 : 0; }
+static void setMarkdown(int v) { Font::setMarkdown(v != 0); }
 
 static const SettingItem kItems[] = {
   { D_WEB_FONT_SIZE_LABEL,    kSizeOptions,   4, getSize,     setSize     },
   { D_WEB_FONT_FAMILY_LABEL,  kFamilyOptions, 2, getFamily,   setFamily   },
   { D_WEB_LINE_SPACING_LABEL, kGapOptions,    4, getLineGap,  setLineGap  },
   { D_WEB_BIONIC_LABEL,       nullptr,        0, getBionic,   setBionic   },
+  { D_WEB_MARKDOWN_LABEL,     nullptr,        0, getMarkdown, setMarkdown },
 };
 static const int kItemCount = sizeof(kItems) / sizeof(kItems[0]);
 
