@@ -357,6 +357,7 @@ int measureBionicLine(const char* line) {
 void drawLine(int x, int y, const char* line) {
   if (!line) return;
   if (s_bionic) drawBionicLine(x, y, line);
+  if (s_markdown) drawMarkdownLine(x, y, line);
   int cursorX = x;
   forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
     if (segLen <= 0) return;
@@ -387,6 +388,35 @@ void drawBionicLine(int x, int y, const char* line) {
       useBody();
       printSlice(cursorX, y, seg, segLen, kFormattedScratchMax);
       cursorX += measureSlice(seg, segLen, kFormattedScratchMax);
+      return;
+    }
+    int strong = bionicPrefixBytes(seg, segLen);
+    if (strong <= 0) {
+      useBody();
+      printSlice(cursorX, y, seg, segLen, kFormattedScratchMax);
+      cursorX += measureSlice(seg, segLen, kFormattedScratchMax);
+      return;
+    }
+    useBold();
+    printSlice(cursorX, y, seg, strong, kFormattedScratchMax);
+    cursorX += measureSlice(seg, strong, kFormattedScratchMax);
+    cursorX += kBionicRestGapPx;
+    useBody();
+    printSlice(cursorX, y, seg + strong, segLen - strong, kFormattedScratchMax);
+    cursorX += measureSlice(seg + strong, segLen - strong, kFormattedScratchMax);
+  });
+  useBody();
+}
+
+void drawMarkdownLine(int x, int y, const char* line) {
+  int cursorX = x;
+  bool isBold = false;
+  forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
+    if (segLen <= 0) return;
+    if (!isWord) {
+      isBold ? useBold() : useBody();
+      printSlice(cursorX, y, seg, segLen, kFormattedScratchMax);
+      cursorX += measureSlice(seg, segLen. kFormattedScratchMax);
       return;
     }
     int strong = bionicPrefixBytes(seg, segLen);

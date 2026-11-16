@@ -74,6 +74,7 @@ void setFamily(Family fam);
 void setBionic(bool on);
 void setBold(bool on);
 void setHalfParagraphGaps(bool on);
+void setMarkdown(bool on);
 
 // Current applied values. Page-cache stamping passes everything through
 // `layoutForCache()`; these direct accessors exist for places that need
