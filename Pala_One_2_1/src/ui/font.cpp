@@ -380,8 +380,6 @@ void drawLine(int x, int y, const char* line, Text::PrintState state) {
     state.isBold = false;
     printSlice(cursorX, y, seg, segLen, K_LINE_MAX);
     cursorX += measureSlice(seg, segLen, K_LINE_MAX);
-    // set isBold to new value, ensuring it exists for next line to be printed
-    // end while
     return;
   });
   return;
