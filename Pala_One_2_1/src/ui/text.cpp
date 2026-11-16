@@ -26,8 +26,9 @@ uint32_t drawPageAt(File& f, uint32_t startPos) {
   const LayoutMetrics& m = Font::bodyLayout();
   Font::useBody();
 
-  Font::PrintState state = Font::PrintState();
+  Text::PrintState state = Text::PrintState();
   state.isBold = false;
+
   int cursorY = TOP_PAD + m.ascent;
   auto onLine = [&](const char* buf, size_t len) {
     // len 0 indicates a paragraph gap. Advance by gap height.
@@ -64,6 +65,7 @@ uint32_t nextPageOffset(File& f, uint32_t startPos) {
   BufferedFileReadStream stream(f);
   const LayoutMetrics& m = Font::bodyLayout();
   Font::useBody();
+
   return paginatePage(stream, startPos, m, bodyMeasure, nullptr);
 }
 
