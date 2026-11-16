@@ -3,7 +3,7 @@
 #include "src/hal/display.h"            // u8g2
 #include "src/pure/bookmarks_codec.h"   // kOffsetUnset
 #include "src/storage/page_cache.h"     // on-disk page-offset cache
-#include "src/ui/font.h"                // Font::useBody / bodyLayout / measureLine / layoutForCache
+#include "src/ui/font.h"                // Font::useBody / bodyLayout / measureLine / layoutForCache / PrintState
 
 // Measure-width adapter for the paginator. Routes through Font::measureLine,
 // which handles other options under the hood (e.g. bionic, markdown) The bionic
@@ -26,13 +26,15 @@ uint32_t drawPageAt(File& f, uint32_t startPos) {
   const LayoutMetrics& m = Font::bodyLayout();
   Font::useBody();
 
+  Font::PrintState state = Font::PrintState();
+  state.isBold = false;
   int cursorY = TOP_PAD + m.ascent;
   auto onLine = [&](const char* buf, size_t len) {
     // len 0 indicates a paragraph gap. Advance by gap height.
     if (len == 0) { cursorY += m.paragraphGapH; return; }
-    // drawLine sets the active u8g2 font back to Body before returning,
-    // so the next line measurement (via bodyMeasure) is consistent.
-    Font::drawLine(MARGIN_X, cursorY, buf);
+    // drawLine sets the active u8g2 font back to the proper font state before
+    // returning, so the next line measurement (via bodyMeasure) is consistent.
+    Font::drawLine(MARGIN_X, cursorY, buf, state);
     cursorY += m.lineH;
   };
 

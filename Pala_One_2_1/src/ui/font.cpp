@@ -4,9 +4,10 @@
 #include <U8g2_for_Adafruit_GFX.h>
 
 #include "src/config.h"
-#include "src/hal/display.h"  // u8g2 instance
-#include "src/state.h"        // prefs
-#include "src/ui/statusbar.h" // Statusbar::reserveH
+#include "src/hal/display.h"    // u8g2 instance
+#include "src/state.h"          // prefs
+#include "src/ui/statusbar.h"   // Statusbar::reserveH
+#include "src/pure/text_util.h" // constants for markdown
 
 // OpenDyslexic u8g2 font tables. Vendored alongside the sketch (see
 // Pala_One_2_1/opendyslexic_u8g2_fonts.h). Only referenced from this file.
@@ -274,7 +275,7 @@ int bionicPrefixBytes(const char* word, int byteLen) {
 
 // Largest line the paginator emits in one shot — see kLineMax in
 // paginator.cpp. Word-level slicing fits in the same envelope.
-static constexpr int kFormattedScratchMax = 320;
+static const int kFormattedScratchMax = 320;
 
 // Walk a body-text line and call `onPart` for each maximal stretch of
 // either non-space bytes (one word) or space bytes (one space run). For
@@ -348,16 +349,22 @@ int measureBionicLine(const char* line) {
       total += measureSlice(seg, segLen, kFormattedScratchMax);
       return;
     }
-    total += measureBionicWord(seg, segLen, kFormattedScratchMax);
+    total += measureBionicWord(seg, segLen);
   });
   useBody();
   return total;
 }
 
-void drawLine(int x, int y, const char* line) {
+void drawLine(int x, int y, const char* line, PrintState state) {
   if (!line) return;
-  if (s_bionic) drawBionicLine(x, y, line);
-  if (s_markdown) drawMarkdownLine(x, y, line);
+  if (s_bionic) {
+    drawBionicLine(x, y, line, state);
+    return;
+  }
+  if (s_markdown) {
+    drawMarkdownLine(x, y, line, state);
+    return;
+  }
   int cursorX = x;
   forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
     if (segLen <= 0) return;
@@ -380,7 +387,7 @@ void drawLine(int x, int y, const char* line) {
   return;
 }
 
-void drawBionicLine(int x, int y, const char* line) {
+void drawBionicLine(int x, int y, const char* line, PrintState state) {
   int cursorX = x;
   forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
     if (segLen <= 0) return;
@@ -406,35 +413,37 @@ void drawBionicLine(int x, int y, const char* line) {
     cursorX += measureSlice(seg + strong, segLen - strong, kFormattedScratchMax);
   });
   useBody();
+  state.isBold = false;
 }
 
-void drawMarkdownLine(int x, int y, const char* line) {
+void drawMarkdownLine(int x, int y, const char* line, PrintState state) {
   int cursorX = x;
   bool isBold = false;
   forEachLineSegment(line, [&](const char* seg, int segLen, bool isWord) {
     if (segLen <= 0) return;
     if (!isWord) {
-      isBold ? useBold() : useBody();
-      printSlice(cursorX, y, seg, segLen, kFormattedScratchMax);
-      cursorX += measureSlice(seg, segLen. kFormattedScratchMax);
-      return;
-    }
-    int strong = bionicPrefixBytes(seg, segLen);
-    if (strong <= 0) {
-      useBody();
       printSlice(cursorX, y, seg, segLen, kFormattedScratchMax);
       cursorX += measureSlice(seg, segLen, kFormattedScratchMax);
       return;
+    };
+    for (int i = 0; i < segLen; i++) {
+      isBold ? useBold() : useBody();
+      if (i == DIRECTIVE_BOLD) {
+        useBold();
+        continue;
+      } else if (i == DIRECTIVE_HEADING) {
+        // useHeading();
+        useBold();
+        continue;
+      } else if (i == DIRECTIVE_NORMAL) {
+        useBody();
+        continue;
+      }
+      printSlice(cursorX, y, seg, 1, kFormattedScratchMax);
+      cursorX += 1;
     }
-    useBold();
-    printSlice(cursorX, y, seg, strong, kFormattedScratchMax);
-    cursorX += measureSlice(seg, strong, kFormattedScratchMax);
-    cursorX += kBionicRestGapPx;
-    useBody();
-    printSlice(cursorX, y, seg + strong, segLen - strong, kFormattedScratchMax);
-    cursorX += measureSlice(seg + strong, segLen - strong, kFormattedScratchMax);
   });
-  useBody();
+  state.isBold = isBold;
 }
 
 void invalidateLayoutCache() { s_layoutValid = false; }
