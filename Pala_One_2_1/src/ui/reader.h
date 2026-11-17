@@ -4,6 +4,7 @@
 #include "src/config.h"
 #include "src/state.h"  // File, FS macro
 #include "src/pure/page_offset_table.h"
+#include "src/ui/print_state.h"
 
 // ============================================================================
 //  The currently open book and where the user is looking at it. Shared
@@ -62,7 +63,7 @@ struct BookView {
 extern BookView g_bookview;
 
 bool openBookByIndex(int idx);
-void renderCurrentPage();
+void renderCurrentPage(PrintState::State &state);
 void forceNextRenderFull();  // one-shot: next renderCurrentPage() does a full refresh
 
 // Cursor navigation. Both move the cursor and bump `pageTurnsSinceFull` on

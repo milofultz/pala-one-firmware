@@ -364,7 +364,7 @@ static bool prepareForRender() {
   return true;
 }
 
-void renderCurrentPage() {
+void renderCurrentPage(PrintState::State &state) {
   // Strong invariant: if we got here, a book is open. The reader screen
   // is never active otherwise.
   if (!prepareForRender()) {
@@ -386,8 +386,7 @@ void renderCurrentPage() {
   }
 
   beginPageCanvas();
-  Font::useBody();
-  PrintState::State state = { .isBold = false };
+  state.isBold ? Font::useBold() : Font::useBody();
 
   uint32_t nextOff = drawPageAt(g_bookview.book.file(), start, state);
   // Record what render learned about the next page so a later advance

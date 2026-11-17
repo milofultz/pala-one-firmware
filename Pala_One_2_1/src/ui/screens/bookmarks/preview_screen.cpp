@@ -11,10 +11,13 @@ void BookmarkPreviewScreen::onEnter() {
 }
 
 void BookmarkPreviewScreen::draw() {
-  renderCurrentPage();
+  PrintState::State state = { .isBold = false };
+  renderCurrentPage(state);
 }
 
 void BookmarkPreviewScreen::onButton(const ButtonEvent& e) {
+  PrintState::State state = { .isBold = false };
+
   if (Gestures::resolveLegacyAction(e, ButtonEvent::Triple, ACTION_HOME)) {
     // Cancel — full clear so we don't leave a half-open state for the next
     // screen. The bookmark list screen opens its own file handle for labels.
@@ -32,12 +35,12 @@ void BookmarkPreviewScreen::onButton(const ButtonEvent& e) {
   }
 
   if (Gestures::resolveLegacyAction(e, ButtonEvent::Double, ACTION_PREV)) {
-    if (retreatPage()) renderCurrentPage();
+    if (retreatPage()) renderCurrentPage(state);
     return;
   }
 
   if (Gestures::resolveLegacyAction(e, ButtonEvent::Short, ACTION_NEXT)) {
-    if (advancePage()) renderCurrentPage();
+    if (advancePage()) renderCurrentPage(state);
     return;
   }
 }

@@ -3,6 +3,7 @@
 #include "src/hal/display.h"
 #include "src/hal/input.h"
 #include "src/ui/lock.h"                     // Lock::engage on ACTION_LOCK
+#include "src/ui/print_state.h"
 #include "src/ui/reader.h"
 #include "src/ui/reader_actions.h"           // Gestures::actionFor + ButtonAction
 #include "src/ui/reader_menu.h"              // overlay state + dispatch
@@ -16,13 +17,13 @@
 // Carry out one of the bindable reader actions. No-op for ACTION_NONE.
 // Lives at the screen layer because the actions are reader-context things
 // (bookmark, lock, menu) — not generic input-layer concepts.
-static void performReaderAction(ButtonAction action) {
+static void performReaderAction(ButtonAction action, PrintState::State &state) {
   switch (action) {
     case ACTION_BOOKMARK: {
       const char* msg = addBookmarkForCurrentBook();
       if (msg) Toast::show(msg);
       g_bookview.cursor.pageTurnsSinceFull++;
-      renderCurrentPage();
+      renderCurrentPage(state);
       break;
     }
     case ACTION_LOCK:
@@ -45,12 +46,14 @@ static void performReaderAction(ButtonAction action) {
   }
 }
 
+PrintState::State ReaderScreen::state = { .isBold = false };
+
 void ReaderScreen::onEnter() {
   draw();
 }
 
 void ReaderScreen::draw() {
-  renderCurrentPage();
+  renderCurrentPage(ReaderScreen::state);
 }
 
 void ReaderScreen::onButton(const ButtonEvent& e) {
@@ -59,7 +62,7 @@ void ReaderScreen::onButton(const ButtonEvent& e) {
   if (ReaderMenu::isActive()) {
     if (ReaderMenu::onButton(e) && !ReaderMenu::isActive()) {
       g_bookview.cursor.pageTurnsSinceFull = FULL_REFRESH_EVERY_N_PAGES;
-      renderCurrentPage();
+      renderCurrentPage(ReaderScreen::state);
     }
     return;
   }
@@ -88,7 +91,7 @@ void ReaderScreen::onButton(const ButtonEvent& e) {
     return;
   }
 
-  performReaderAction(Gestures::actionFor(e.kind));
+  performReaderAction(Gestures::actionFor(e.kind), ReaderScreen::state);
 
 }
 
